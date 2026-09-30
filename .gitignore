@@ -1,0 +1,23 @@
+# Keil generated build files
+*.o
+*.d
+*.crf
+*.lst
+*.map
+*.lnp
+*.axf
+*.plg
+*.dep
+*.tra
+*.htm
+
+# Backup files
+*.bak
+
+# Keil temporary/debug files
+*.iex
+*.uvguix.*
+
+# OS/editor files
+.DS_Store
+Thumbs.db
