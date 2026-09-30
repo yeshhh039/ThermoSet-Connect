@@ -34,46 +34,7 @@ ThermoSet Connect is an embedded IoT project based on the LPC2148 ARM7 microcont
 ![ThermoSet Connect System Architecture](docs/images/Architecture.png)
 
 
-
-
 ```text
-                     ┌─────────────────┐
-                     │      LM35       │
-                     │ Temperature     │
-                     │    Sensor       │
-                     └────────┬────────┘
-                              │ Analog
-                              ▼
-                    ┌──────────────────┐
-                    │     LPC2148      │
-                    │      ARM7        │
-                    │ ADC / RTC / I2C  │
-                    │ UART / GPIO      │
-                    │ EINT0            │
-                    └───┬────┬────┬────┘
-                        │    │    │
-          ┌─────────────┘    │    └─────────────┐
-          ▼                  ▼                  ▼
-    ┌───────────┐      ┌────────────┐      ┌──────────┐
-    │ 16×2 LCD  │      │ AT24C256   │      │  Buzzer  │
-    │  Display  │      │  EEPROM    │      │  Alert   │
-    └───────────┘      └────────────┘      └──────────┘
-
-                    LPC2148 UART
-                         │
-                         ▼
-                   ┌────────────┐
-                   │   ESP-01   │
-                   │ Wi-Fi       │
-                   └──────┬─────┘
-                          │
-                       Internet
-                          │
-                          ▼
-                   ┌────────────┐
-                   │ ThingSpeak │
-                   │   Cloud    │
-                   └────────────┘
 ```
 
 ## Hardware Components
