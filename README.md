@@ -34,9 +34,6 @@ ThermoSet Connect is an embedded IoT project based on the LPC2148 ARM7 microcont
 ![ThermoSet Connect System Architecture](docs/images/Architecture.png)
 
 
-```text
-```
-
 ## Hardware Components
 
 | Component | Purpose |
