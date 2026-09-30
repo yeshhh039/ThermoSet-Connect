@@ -26,8 +26,7 @@
 /* EEPROM address used to store the set point */
 #define SETPOINT_ADDR 0x77
 
-/* Default set point used only the very first time the system runs
-   (i.e. when EEPROM has never been written / holds an invalid value) */
+/* Default set point used only the very first time the system runs */
 #define DEFAULT_SETPOINT 35
 
 /* Global status variables */
@@ -57,49 +56,10 @@ static void buzzer_alert(void)
         }
 }
 
-//#define WELCOME_SCROLL_MS 120
-
 static void welcome_msg(void)
 {
-/*
-        char msg[] = "WELCOME TO THERMOSET CONNECT";
-        int len = 0;
-        int step, col, idx;
 
-        while(msg[len] != '\0')
-        {
-                len++;
-        }
-
-        cmd_lcd(0x01);
-        delay_ms(5);
-
-        
-        cmd_lcd(0xC0);
-        string_lcd("IoT Temp Monitor");
-
-        for(step = 0; step <= (len + 16); step++)
-        {
-                cmd_lcd(0x80);
-
-                for(col = 0; col < 16; col++)
-                {
-                        idx = step + col - 16;
-
-                        if((idx >= 0) && (idx < len))
-                        {
-                                char_lcd(msg[idx]);
-                        }
-                        else
-                        {
-                                char_lcd(' ');
-                        }
-                }
-
-                delay_ms(WELCOME_SCROLL_MS);
-        }
-		 */
-        /* steady final screen */
+        /* welcome screen */
         cmd_lcd(0x01);
         //delay_ms(5);
         cmd_lcd(0x80);
@@ -140,13 +100,11 @@ int main()
         cust_lcd();
         init_i2c();
         init_keypad();
-
-        /* Welcome message with scrolling text */
         welcome_msg();
 
         sec = 0;   min = 0;     hour = 12;
-        date = 30; month = 9;   year = 2026;
-        week = 4;
+        date = 1; month = 10;   year = 2026;
+        week = 5;
 
         set_time_info(&sec, &min, &hour);
         set_date_info(&date, &month, &year);
