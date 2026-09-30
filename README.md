@@ -1,113 +1,368 @@
 # ThermoSet Connect
-### An IoT-Based Local and Remote Temperature Monitoring, Set-Point Control, and Alert System
 
-## Objective
-ThermoSet Connect continuously monitors temperature, supports **local (keypad)** and
-**remote (cloud-based)** set-point configuration, stores the set point in EEPROM so it
-survives a power cycle, and raises local + cloud alerts when the temperature exceeds
-the configured limit. Useful for laboratories, server rooms, cold-storage facilities
-and industrial equipment.
+### IoT-Based Temperature Monitoring, Local & Remote Set-Point Control System
 
-## Hardware Requirements
-- LPC2148 (ARM7 microcontroller)
-- LM35 temperature sensor
-- AT24C256 EEPROM (I2C)
-- 4x4 matrix keypad
-- Switch (triggers the local set-point edit menu via EINT0)
-- 16x2 LCD
-- Buzzer
-- ESP01 WiFi module
-- DB-9 cable / USB-UART converter
+ThermoSet Connect is an embedded IoT project based on the LPC2148 ARM7 microcontroller. The system monitors temperature using an LM35 sensor, displays temperature and RTC information on a 16×2 LCD, allows local set-point configuration through a 4×4 keypad, stores the set point in EEPROM, and provides remote monitoring and set-point control through an ESP-01 Wi-Fi module and ThingSpeak.
 
-## Software Requirements
-- Keil C Compiler
-- Embedded C
-- Flash Magic
+## Features
 
-## Project Structure
+- LPC2148 ARM7-based embedded system
+- LM35 temperature sensing
+- ADC-based temperature measurement
+- 16×2 LCD display
+- RTC time and date display
+- 4×4 matrix keypad
+- External interrupt for local configuration
+- Local temperature set-point configuration
+- Remote set-point configuration through ThingSpeak
+- AT24C256 EEPROM for persistent set-point storage
+- Set-point retained after power OFF/ON
+- ESP-01 Wi-Fi connectivity
+- ThingSpeak temperature monitoring
+- Over-temperature detection
+- Local buzzer alert
+- Cloud alert upload
+- Modular Embedded C firmware
+
+## System Architecture
+
+```text
+                     ┌─────────────────┐
+                     │      LM35       │
+                     │ Temperature     │
+                     │    Sensor       │
+                     └────────┬────────┘
+                              │ Analog
+                              ▼
+                    ┌──────────────────┐
+                    │     LPC2148      │
+                    │      ARM7        │
+                    │ ADC / RTC / I2C  │
+                    │ UART / GPIO      │
+                    │ EINT0            │
+                    └───┬────┬────┬────┘
+                        │    │    │
+          ┌─────────────┘    │    └─────────────┐
+          ▼                  ▼                  ▼
+    ┌───────────┐      ┌────────────┐      ┌──────────┐
+    │ 16×2 LCD  │      │ AT24C256   │      │  Buzzer  │
+    │  Display  │      │  EEPROM    │      │  Alert   │
+    └───────────┘      └────────────┘      └──────────┘
+
+                    LPC2148 UART
+                         │
+                         ▼
+                   ┌────────────┐
+                   │   ESP-01   │
+                   │ Wi-Fi       │
+                   └──────┬─────┘
+                          │
+                       Internet
+                          │
+                          ▼
+                   ┌────────────┐
+                   │ ThingSpeak │
+                   │   Cloud    │
+                   └────────────┘
 ```
-ThermoSet_Connect/
-├── main.c              -- main application logic
-├── adc.c / adc.h        -- LM35 reading via ADC
-├── lcd.c                -- LCD driver
-├── lcd_defines.h
-├── cust_lcd.c / .h      -- custom LCD character
-├── lcd_display.c        -- set-point/time edit menu + numeric keypad entry
-├── menu.h
-├── keypad.c / keypad_defines.h  -- 4x4 matrix keypad driver
-├── rtc.c / rtc.h        -- onboard RTC
-├── i2c.c / i2c.h        -- I2C bus driver (EEPROM + RTC)
-├── eeprom.c / eeprom.h  -- AT24C256 byte/page read-write
-├── uart.c / uart.h      -- UART0 driver + ISR (ESP01 communication)
-├── esp01.c              -- ESP01 AT-command driver + ThingSpeak upload/read
-├── esp01_call.c         -- init sequence, upload wrapper, cloud set-point sync
-├── esp01.h              -- WiFi/ThingSpeak config (edit before building!)
-├── interrupt.c / interrupt.h -- EINT0 (local set-point switch)
-├── delay.c / delay.h
-├── clock.h
-└── README.md
-```
 
-## Before You Build
-Open **esp01.h** and fill in your own values:
+## Hardware Components
 
-| Macro | What it's for |
+| Component | Purpose |
 |---|---|
-| `WIFI_SSID`, `WIFI_PASSWORD` | Your WiFi network credentials |
-| `TS_WRITE_API_KEY` | Write API key of your **main data channel** (temperature, alerts, set-point log) |
-| `SP_CHANNEL_ID`, `SP_READ_API_KEY` | Channel ID + Read API key of a **second, dedicated channel** used only for remote set-point entry |
+| LPC2148 | Main ARM7 microcontroller |
+| LM35 | Temperature sensor |
+| AT24C256 | EEPROM for set-point storage |
+| 16×2 LCD | Display |
+| 4×4 Keypad | Local configuration |
+| RTC | Time and date |
+| ESP-01 | Wi-Fi communication |
+| Buzzer | Over-temperature alert |
+| External Switch | EINT0 configuration trigger |
 
-Create two ThingSpeak channels:
-1. **Main data channel** — Field1: Temperature, Field2: Alert temperature, Field3: Current set point.
-2. **Set-point entry channel** — Field1: the set point you want the device to adopt. Update this field from your phone/PC whenever you want to change the limit remotely.
+## Software / Tools
 
-## How It Works
+- Embedded C
+- Keil µVision
+- LPC2148 ARM7
+- Flash Magic
+- UART
+- ADC
+- I2C
+- RTC
+- ESP-01 AT Commands
+- ThingSpeak
 
-### Startup
-1. All peripherals are initialized (LCD, UART, ADC, RTC, I2C, keypad, EINT0).
-2. The set point is **read back from EEPROM**. If EEPROM has never been written
-   (or holds an out-of-range value), a default of 32°C is used and saved.
-3. ESP01 is initialized and joined to the configured WiFi network.
+## Working Principle
 
-### Main Loop
-- Reads the LM35 temperature and displays it, along with the RTC time/date, on the LCD.
-- **Every `TEMP_UPLOAD_INTERVAL` minutes (default 3):** uploads the current temperature
-  to Field1 of the main data channel.
-- **Every `SP_POLL_INTERVAL` minutes (default 2):** reads Field1 of the set-point entry
-  channel. If it differs from the set point currently in use, the new value is adopted
-  and written to EEPROM — this is the "remote set point" path, and it deliberately does
-  *not* poll on every loop iteration, to avoid flooding the cloud with requests.
-- **Local set point:** pressing the switch fires an EINT0 interrupt; the main loop then
-  opens a keypad menu (`1.EDIT` time/date, `2.SP` set a new set point, `3.DISPSP` view
-  the current set point, `4.EXIT`). A new set point entered this way is written straight
-  to EEPROM and logged to the cloud (Field3).
-- **Alert:** whenever temperature exceeds the set point, the buzzer blinks a short
-  pattern on every loop pass, and a cloud alert (Field2) is sent once, on the rising
-  edge of the condition (not repeatedly while it stays exceeded).
+The LPC2148 reads the temperature from the LM35 through its ADC. The measured temperature is displayed on the LCD and compared with the configured set point.
 
-## Enhancements Made to the Reference Code
-This build started from a reference "Cloud-Connected Environmental Data Logger"
-codebase and was adapted specifically for the ThermoSet Connect spec:
-- Removed the MQ-2 gas/smoke sensor logic (not part of this spec) and its buzzer/interrupt wiring.
-- The set point is now **actually read back from EEPROM on boot** (previously hardcoded to 32 every time).
-- Added `esp01_readThingspeakField()` and `sync_cloud_setpoint()` to implement the
-  **remote/cloud set-point path** using a dedicated ThingSpeak channel, polled on its own timer.
-- Removed a leftover debug-simulation shortcut and a stray syntax error in the ESP01 driver
-  that would have prevented the AT-command handshake from ever really running.
-- Reworked field usage so upload/read purposes are unambiguous (Field1 = temperature,
-  Field2 = alert, Field3 = set point log on the main channel; separate channel for remote entry).
-- Buzzer alert changed from "stays on continuously" to a blink pattern, and cloud alert
-  upload is now edge-triggered instead of re-sent on every loop iteration.
+```text
+Temperature > Set Point
+        │
+        ├── Buzzer Alert
+        │
+        └── ThingSpeak Alert
+```
 
-## Build Steps (Keil)
-1. Create a new Keil project targeting LPC2148, add all the `.c` files above.
-2. Build. Fix any include-path issues if your Keil setup differs.
-3. Flash using Flash Magic over the USB-UART converter.
-4. Power up, confirm LCD shows time/date + temperature, and that "WiFi connected"
-   appears after boot.
-5. Test locally: press the switch, use option `2.SP` to change the set point, confirm
-   it survives a power cycle.
-6. Test remotely: update Field1 on your set-point entry channel from ThingSpeak, wait
-   up to `SP_POLL_INTERVAL` minutes, and confirm the LCD/EEPROM adopts the new value.
+## Local Set-Point Control
 
-*** ALL THE BEST ***
+A switch connected to the LPC2148 external interrupt enters the configuration menu.
+
+```text
+Switch Press
+     ↓
+   EINT0
+     ↓
+Configuration Menu
+     ↓
+4×4 Keypad
+     ↓
+New Set Point
+     ↓
+EEPROM
+```
+
+## Remote Set-Point Control
+
+The ESP-01 provides Wi-Fi connectivity between the LPC2148 and ThingSpeak.
+
+```text
+Phone / PC
+    ↓
+ThingSpeak
+    ↓
+ESP-01
+    ↓ UART
+LPC2148
+    ↓
+New Set Point
+    ↓
+EEPROM
+```
+
+The remote set point is checked periodically using:
+
+```c
+#define SP_POLL_INTERVAL 2
+```
+
+## EEPROM Storage
+
+The configured set point is stored in AT24C256 EEPROM so it is retained after a power cycle.
+
+```c
+#define SETPOINT_ADDR 0x77
+#define DEFAULT_SETPOINT 35
+```
+
+At startup, the LPC2148 reads the stored value. If the value is invalid, the default set point is used and stored.
+
+## ThingSpeak Communication
+
+The ESP-01 communicates with the LPC2148 through UART and uses AT commands for Wi-Fi/network communication.
+
+ThingSpeak is used for:
+
+- Temperature monitoring
+- Over-temperature alert reporting
+- Set-point information
+- Remote set-point entry
+
+### Main ThingSpeak Channel
+
+| Field | Purpose |
+|---|---|
+| Field 1 | Temperature |
+| Field 2 | Over-temperature alert |
+| Field 3 | Set-point information |
+
+### Remote Set-Point Channel
+
+| Field | Purpose |
+|---|---|
+| Field 1 | Remote set-point value |
+
+## Upload Intervals
+
+```c
+#define TEMP_UPLOAD_INTERVAL 3
+#define SP_POLL_INTERVAL     2
+```
+
+| Operation | Interval |
+|---|---:|
+| Temperature upload | 3 minutes |
+| Remote set-point polling | 2 minutes |
+
+## Over-Temperature Detection
+
+The system compares the measured temperature with the configured set point.
+
+When the temperature exceeds the set point:
+
+1. The buzzer generates the local alert pattern.
+2. The over-temperature condition is uploaded to ThingSpeak.
+3. The cloud alert is edge-triggered so it is not repeatedly uploaded while the same condition remains active.
+
+## Firmware Structure
+
+```text
+ThermoSet_Connect/
+│
+├── src/
+│   ├── main.c
+│   ├── adc.c
+│   ├── cust_lcd.c
+│   ├── delay.c
+│   ├── eeprom.c
+│   ├── esp01.c
+│   ├── esp01_call.c
+│   ├── i2c.c
+│   ├── interrupt.c
+│   ├── keypad.c
+│   ├── lcd.c
+│   ├── lcd_display.c
+│   ├── rtc.c
+│   └── uart.c
+│
+├── include/
+│   ├── adc.h
+│   ├── clock.h
+│   ├── cust_lcd.h
+│   ├── delay.h
+│   ├── eeprom.h
+│   ├── esp01.h
+│   ├── i2c.h
+│   ├── interrupt.h
+│   ├── keypad_defines.h
+│   ├── lcd_defines.h
+│   ├── menu.h
+│   ├── rtc.h
+│   └── uart.h
+│
+├── Keil/
+│   ├── ThermoSet_Connect.uvproj
+│   ├── ThermoSet_Connect.uvopt
+│   ├── ThermoSet_Connect.sct
+│   ├── Startup.s
+│   └── ThermoSet_Connect.hex
+│
+├── Documentation/
+│   └── CHANGES_demo3.txt
+│
+├── README.md
+└── .gitignore
+```
+
+## Source File Description
+
+| File | Function |
+|---|---|
+| `main.c` | Main application logic |
+| `adc.c` | ADC and temperature measurement |
+| `lcd.c` | LCD driver |
+| `lcd_display.c` | LCD display/menu functions |
+| `keypad.c` | 4×4 keypad driver |
+| `rtc.c` | RTC functions |
+| `i2c.c` | I2C communication |
+| `eeprom.c` | EEPROM read/write |
+| `uart.c` | UART communication |
+| `esp01.c` | ESP-01 communication |
+| `esp01_call.c` | ESP-01 initialization and ThingSpeak operations |
+| `interrupt.c` | External interrupt handling |
+| `delay.c` | Delay functions |
+| `cust_lcd.c` | Custom LCD functions |
+
+## Communication Interfaces
+
+### ADC
+
+```text
+LM35 → LPC2148 ADC
+```
+
+### I2C
+
+```text
+LPC2148 ↔ AT24C256 EEPROM
+```
+
+### UART
+
+```text
+LPC2148 ↔ ESP-01
+```
+
+### GPIO
+
+Used for LCD, keypad and buzzer control.
+
+### External Interrupt
+
+Used to trigger the local configuration menu.
+
+## Main Program Flow
+
+```text
+START
+  ↓
+Initialize Peripherals
+  ↓
+Read Set Point from EEPROM
+  ↓
+Initialize ESP-01
+  ↓
+Connect to Wi-Fi
+  ↓
+MAIN LOOP
+  ↓
+Read RTC
+  ↓
+Read Temperature
+  ↓
+Display Temperature / RTC
+  ↓
+Upload Temperature Periodically
+  ↓
+Poll Remote Set Point Periodically
+  ↓
+Check Local Interrupt
+  ↓
+Check Temperature > Set Point
+  ↓
+Buzzer / Cloud Alert
+  ↓
+Repeat
+```
+
+## Project Applications
+
+- Industrial temperature monitoring
+- Laboratory equipment monitoring
+- Server room monitoring
+- Storage temperature monitoring
+- Remote equipment monitoring
+- IoT-based embedded monitoring systems
+
+## Future Enhancements
+
+- Mobile application interface
+- Multiple temperature sensors
+- Historical temperature graphs
+- Configurable alert thresholds
+- OTA firmware update
+- Additional environmental sensors
+- Fault detection and diagnostics
+
+## Project Status
+
+**Completed and demonstrated.**
+
+The project integrates LPC2148 ARM7 firmware, LM35 temperature sensing, RTC, ADC, I2C EEPROM, keypad-based local configuration, ESP-01 Wi-Fi communication and ThingSpeak cloud monitoring.
+
+## Author
+
+**Yeshwanth Botsa**
+
+Embedded Systems | ARM7 | Embedded C | IoT
