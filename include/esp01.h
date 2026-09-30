@@ -2,11 +2,11 @@
 #define _ESP01_H_
 
 /* ---- WiFi network credentials ---- */
-#define WIFI_SSID     "ThermoSet_Connect"
-#define WIFI_PASSWORD "yash3669"
-#define TS_WRITE_API_KEY "OLLU4M6UN8QHST8M"
-#define SP_CHANNEL_ID    3497053
-#define SP_READ_API_KEY  "B0XV2UDJY10QYYLP"
+#define WIFI_SSID     "SSID"
+#define WIFI_PASSWORD "PASSWORD"
+#define TS_WRITE_API_KEY "XXXXXXXXXXXXXXXX"
+#define SP_CHANNEL_ID    XXXXXXX
+#define SP_READ_API_KEY  "XXXXXXXXXXXXXXXX"
 #define SP_FIELD         1
 
 
